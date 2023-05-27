@@ -6,4 +6,13 @@ CREATE TABLE IF NOT EXISTS all_bars_transaction_data
     , [drink] TEXT
     , [amount] REAL
     , [branch] TEXT
-    )
+);
+CREATE TABLE IF NOT EXISTS drinks_and_glasses
+    ([drink] TEXT
+    , [glass] TEXT
+);
+CREATE TABLE IF NOT EXISTS bar_stock_data
+    ([glass_type] TEXT
+    , [stock] INTEGER
+    , [bar] TEXT
+);

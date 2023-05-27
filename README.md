@@ -1,5 +1,19 @@
 # Analytics-engineering test
 
+## Notes
+
+1. I'm assuming all three branch files (London, NY, Budapest) have the same currency since the numbers representing the "amount" are the same for each file (e.g., "Sweet Sangria" is 4.0 in every file). I therefore did not convert any currencies.
+2. I have created the `glasses_used_per_hour` table in my SQLite database as my Proof of Concept table. The idea here is to provide bar staff with a high-level overview of where they ought to focus their restocking on. For example, those in the Budapest branch can immediately see that the having only 8 cocktail glasses on December 28th, 2020 would not cover the total of 2780 ordered in that day. As the table shows, on that date they recieved about 116 orders per hour. So, in order to keep up with this demand, the total time--from preparation of the cocktail to the customer finishing their drink--that each cocktail glass has to be "in use" would be as follows:
+
+```
+Total glasses used: 2780
+Number of glasses in stock: 8
+Estimated time per glass in use = 24 / (Total glasses used / Number of glasses in stock)
+=> Estimated time per glass in use = 0.069 hours
+```
+Converting this to minutes, the time for each glass to be in use (from preparation of the cocktail to the customer finishing their drink) in order to cope with the demand would be about 4.13 minutes, which is surely too little time!
+
+## Task Description
 ### Requirements
 - You will need sqlite and Python available to you
 - You can expect to spend around 2-3 hours on this task.

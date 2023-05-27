@@ -8,16 +8,21 @@ import time
 
 base_url = 'https://www.thecocktaildb.com/api/json/v1/1/'
 
-bar_stock_data = pd.read_csv('data/bar_data.csv')
+def upload_df_to_sqlite_db(df, con, table_name):
+    df.to_sql(table_name, con, if_exists='replace', index=False)
 
-def create_db_and_tables(df):
+def normalize_bar_stock_data(filename):
+    bar_stock_data = pd.read_csv(filename)
+    bar_stock_data['stock'] = bar_stock_data['stock'].str.extract('(\d+)').astype(int)
+    return bar_stock_data
+
+def create_db_and_tables():
     with open('data_tables.SQL', 'r') as sql_file:
         data_tables_sql = sql_file.read()
     con = sqlite3.connect("bars_database.sqlite")
     cursor = con.cursor()
     cursor.executescript(data_tables_sql)
     con.commit()
-    df.to_sql('all_bars_transaction_data', con, if_exists='replace', index=False)
     return con
 
 def standardize_london_transactions_csv_to_df(filename):
@@ -72,29 +77,37 @@ def create_all_transactions_dataframe():
     return all_transactions_dataframe
 
 def get_glass_from_drink(distinct_drinks):
-    drinks_and_glasses = {}
+    drinks_and_glasses = []
     endpoint = 'search.php?s='
     headers = {'Accept': 'application/json'}
     for dd in distinct_drinks:
+        temp = {}
         data = requests.get(f'{base_url}{endpoint}{dd}', headers=headers).json()
         glass = data.get("drinks")[0].get("strGlass")
-        drinks_and_glasses[dd] = glass
-        time.sleep(1)
-    return drinks_and_glasses
+        temp["drink"] = dd
+        temp["glass"] = glass
+        drinks_and_glasses.append(temp)
+        time.sleep(0.5) # I have had to include this due to a request time out issue I experienced with the API
+    drinks_and_glasses_df = pd.DataFrame(drinks_and_glasses)
+    return drinks_and_glasses_df
 
-def create_sqlite_database(db):
-    """Creates a new database based on the provided database file
-    Args:
-        db (string): The name of the database file
-    """
-    return 0
+def create_poc_table(con):
+    with open('poc_tables.SQL', 'r') as sql_file:
+        poc_table_sql = sql_file.read()
+    cursor = con.cursor()
+    cursor.executescript(poc_table_sql)
+    con.commit()
 
 def main():
-    df = create_all_transactions_dataframe()
-    con = create_db_and_tables(df)
-    distinct_drinks = get_distinct_drinks(con)
-    drinks_and_glasses = get_glass_from_drink(distinct_drinks)
-    json.dump(drinks_and_glasses, 'drinks_and_glasses.json')
+    bar_stock_data = normalize_bar_stock_data('data/bar_data.csv')
+    all_transactions_df = create_all_transactions_dataframe()
+    conn = create_db_and_tables()
+    distinct_drinks = get_distinct_drinks(conn)
+    drinks_and_glasses_df = get_glass_from_drink(distinct_drinks)
+    upload_df_to_sqlite_db(all_transactions_df, conn, 'all_bars_transaction_data')
+    upload_df_to_sqlite_db(drinks_and_glasses_df, conn, 'drinks_and_glasses')
+    upload_df_to_sqlite_db(bar_stock_data, conn, 'bar_stock_data')
+    create_poc_table(conn)
     
 
 if __name__ == '__main__':
